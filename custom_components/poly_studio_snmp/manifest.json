@@ -1,0 +1,12 @@
+{
+  "domain": "poly_studio_snmp",
+  "name": "Poly Studio SNMP",
+  "codeowners": ["@CountParadox"],
+  "config_flow": true,
+  "documentation": "https://github.com/CountParadox/poly-studio-snmp",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/CountParadox/poly-studio-snmp/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

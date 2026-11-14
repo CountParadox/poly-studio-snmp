@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Poly Studio video bar",
+        "description": "SNMP v2c must be enabled on the device.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "community": "Read-only community"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No SNMP response, or the device does not expose the Poly endpoint MIB."
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    }
+  }
+}
