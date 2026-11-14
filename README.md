@@ -100,7 +100,7 @@ integration stops trying until it is reconfigured, to avoid locking the account.
 - The MIB declares no units; the units above were inferred from observed values.
 - SNMP v3 is not supported.
 - The device exposes no room occupancy, people count or sleep state over SNMP or REST.
-- The REST features were written from the Poly VideoOS REST API Reference Guide. Mute, volume,
-  end call and reboot are confirmed on a Studio X70; dial, answer, DTMF, presets, calendar,
+- The REST features were written from the Poly VideoOS REST API Reference Guide. The mute, volume
+  and end call controls have been used on a Studio X70; dial, answer, DTMF, presets, calendar,
   signage and snapshots have not yet been tested against real hardware.
 - The camera snapshot is a still image stored by the device, not a live stream.
