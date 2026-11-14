@@ -1,11 +1,14 @@
-"""Data coordinator and base entity for Poly Studio SNMP."""
+"""Data coordinator and base entities for Poly Studio SNMP."""
 from __future__ import annotations
 
 import logging
 
+import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -14,6 +17,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import CONF_COMMUNITY, DOMAIN, SCAN_INTERVAL
+from .rest import PolyRest, PolyRestAuthError, PolyRestError
 from .snmp import PolyData, SnmpError, fetch
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,8 +25,16 @@ _LOGGER = logging.getLogger(__name__)
 type PolyConfigEntry = ConfigEntry[PolyCoordinator]
 
 
+def create_rest(hass: HomeAssistant, host: str, user: str, password: str) -> PolyRest:
+    """Build a REST client. The device uses a self-signed certificate and an IP host."""
+    session = async_create_clientsession(
+        hass, verify_ssl=False, cookie_jar=aiohttp.CookieJar(unsafe=True)
+    )
+    return PolyRest(session, host, user, password)
+
+
 class PolyCoordinator(DataUpdateCoordinator[PolyData]):
-    """Polls the Poly endpoint MIB in one walk."""
+    """Polls the Poly endpoint MIB over SNMP and, if a login is configured, the REST API."""
 
     config_entry: PolyConfigEntry
 
@@ -34,15 +46,37 @@ class PolyCoordinator(DataUpdateCoordinator[PolyData]):
             name=f"{DOMAIN} {entry.data[CONF_HOST]}",
             update_interval=SCAN_INTERVAL,
         )
+        self.rest: PolyRest | None = None
+        if entry.data.get(CONF_PASSWORD):
+            self.rest = create_rest(
+                hass, entry.data[CONF_HOST], entry.data.get(CONF_USERNAME) or "admin",
+                entry.data[CONF_PASSWORD],
+            )
+        self._rest_warned = False
 
     async def _async_update_data(self) -> PolyData:
-        data = self.config_entry.data
+        conf = self.config_entry.data
         try:
-            return await self.hass.async_add_executor_job(
-                fetch, data[CONF_HOST], data[CONF_PORT], data[CONF_COMMUNITY]
+            data = await self.hass.async_add_executor_job(
+                fetch, conf[CONF_HOST], conf[CONF_PORT], conf[CONF_COMMUNITY]
             )
         except SnmpError as err:
             raise UpdateFailed(str(err)) from err
+
+        if self.rest is not None and not self.rest.auth_failed:
+            try:
+                data.rest = await self.rest.fetch()
+                self._rest_warned = False
+            except PolyRestAuthError as err:
+                _LOGGER.error(
+                    "REST login to %s failed (%s). REST entities are unavailable until the "
+                    "integration is reconfigured with the correct login", conf[CONF_HOST], err,
+                )
+            except PolyRestError as err:
+                if not self._rest_warned:
+                    _LOGGER.warning("REST API on %s unavailable: %s", conf[CONF_HOST], err)
+                    self._rest_warned = True
+        return data
 
 
 class PolyEntity(CoordinatorEntity[PolyCoordinator]):
@@ -66,3 +100,15 @@ class PolyEntity(CoordinatorEntity[PolyCoordinator]):
             serial_number=serial,
             configuration_url=f"https://{coordinator.config_entry.data[CONF_HOST]}",
         )
+
+
+class PolyRestEntity(PolyEntity):
+    """Entity backed by the REST API; unavailable when REST data is missing."""
+
+    @property
+    def rest_data(self) -> dict:
+        return self.coordinator.data.rest or {}
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.data.rest is not None

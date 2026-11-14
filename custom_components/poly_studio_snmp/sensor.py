@@ -92,7 +92,7 @@ DESCRIPTIONS: tuple[PolySensorDescription, ...] = (
     _status("microphone_status", "Microphone status", "3.5.1.0"),
     _status("nic_status", "Network interface status", "3.10.1.0"),
     _status("external_integration_status", "External integration status", "6.1.0"),
-    _status("presence_status", "Presence status", "6.7.1.0", enabled=False),
+    _status("presence_status", "Presence service status", "6.7.1.0", enabled=False),
     _status("cdr_status", "CDR status", "6.8.1.0", enabled=False),
     _status("syslog_status", "Syslog status", "6.9.1.0", enabled=False),
     _status("software_update_status", "Software update status", "6.10.1.0", enabled=False),
@@ -152,14 +152,41 @@ DESCRIPTIONS: tuple[PolySensorDescription, ...] = (
 )
 
 
+def _rest_connection(data: PolyData) -> dict:
+    """First connection of the first conference from REST /rest/conferences."""
+    for conf in (data.rest or {}).get("conferences") or []:
+        if isinstance(conf, dict):
+            for conn in conf.get("connections") or []:
+                if isinstance(conn, dict):
+                    return conn
+    return {}
+
+
+REST_DESCRIPTIONS: tuple[PolySensorDescription, ...] = (
+    PolySensorDescription(
+        key="call_state", name="Call state", icon="mdi:phone-settings",
+        value_fn=lambda d: _rest_connection(d).get("state"),
+    ),
+    PolySensorDescription(
+        key="call_address", name="Call address", icon="mdi:card-account-phone",
+        value_fn=lambda d: _rest_connection(d).get("address"),
+    ),
+    PolySensorDescription(
+        key="call_protocol", name="Call protocol", entity_registry_enabled_default=False,
+        value_fn=lambda d: _rest_connection(d).get("callType"),
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: PolyConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
     oids = coordinator.data.oids
+    descriptions = DESCRIPTIONS + (REST_DESCRIPTIONS if coordinator.rest is not None else ())
     async_add_entities(
         PolySensor(coordinator, d)
-        for d in DESCRIPTIONS
+        for d in descriptions
         if d.requires is None or d.requires in oids
     )
 

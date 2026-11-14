@@ -30,6 +30,17 @@ def _sending_content(data: PolyData) -> bool | None:
     return None if value is None else value == 1
 
 
+def _device_mode(data: PolyData) -> bool | None:
+    # REST /rest/system/mode/device: the bar is being used as a USB camera/speakerphone
+    return (data.rest or {}).get("device_mode")
+
+
+REST_DESCRIPTIONS = (
+    PolyBinaryDescription(
+        key="device_mode", name="USB device mode", icon="mdi:usb", value_fn=_device_mode
+    ),
+)
+
 DESCRIPTIONS = (
     PolyBinaryDescription(key="in_call", name="In call", icon="mdi:video", value_fn=_in_call),
     PolyBinaryDescription(
@@ -42,7 +53,9 @@ DESCRIPTIONS = (
 async def async_setup_entry(
     hass: HomeAssistant, entry: PolyConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    async_add_entities(PolyBinarySensor(entry.runtime_data, d) for d in DESCRIPTIONS)
+    coordinator = entry.runtime_data
+    descriptions = DESCRIPTIONS + (REST_DESCRIPTIONS if coordinator.rest is not None else ())
+    async_add_entities(PolyBinarySensor(coordinator, d) for d in descriptions)
 
 
 class PolyBinarySensor(PolyEntity, BinarySensorEntity):

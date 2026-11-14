@@ -26,6 +26,8 @@ class PolyData:
 
     sys_name: str | None = None
     oids: dict[str, Any] = field(default_factory=dict)
+    # State from the optional REST API (see rest.py); None when not configured or unavailable.
+    rest: dict[str, Any] | None = None
 
     def get(self, suffix: str) -> Any:
         return self.oids.get(suffix)

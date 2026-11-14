@@ -3,19 +3,36 @@
     "step": {
       "user": {
         "title": "Poly Studio video bar",
-        "description": "SNMP v2c must be enabled on the device.",
+        "description": "SNMP v2c must be enabled on the device. The user name and password are optional: they are the device's admin login and enable the REST controls (mute, volume, end call, reboot).",
         "data": {
           "host": "Host",
-          "port": "Port",
-          "community": "Read-only community"
+          "port": "SNMP port",
+          "community": "SNMP read-only community",
+          "username": "Admin user name (optional)",
+          "password": "Admin password (optional)"
+        }
+      },
+      "reconfigure": {
+        "title": "Poly Studio video bar",
+        "description": "Leave the password empty to use SNMP monitoring only.",
+        "data": {
+          "host": "Host",
+          "port": "SNMP port",
+          "community": "SNMP read-only community",
+          "username": "Admin user name (optional)",
+          "password": "Admin password (optional)"
         }
       }
     },
     "error": {
-      "cannot_connect": "No SNMP response, or the device does not expose the Poly endpoint MIB."
+      "cannot_connect": "No SNMP response, or the device does not expose the Poly endpoint MIB.",
+      "invalid_auth": "The device rejected the admin user name or password.",
+      "rest_cannot_connect": "SNMP works, but the REST API at https://<host>/rest could not be reached."
     },
     "abort": {
-      "already_configured": "This device is already configured."
+      "already_configured": "This device is already configured.",
+      "reconfigure_successful": "Settings updated.",
+      "unique_id_mismatch": "That host is a different device."
     }
   }
 }

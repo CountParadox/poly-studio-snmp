@@ -3,6 +3,9 @@
 Monitors a Poly Studio video bar (developed against a Studio X70 on software 4.2.2) over
 SNMP v2c, using the read-only `POLYCOM-ENDPOINT-MIB` (`1.3.6.1.4.1.13885.101`).
 
+Optionally, if you give it the device's admin login, it also uses the Poly VideoOS REST API
+for controls: microphone mute, camera mute, volume, end call and reboot.
+
 Local polling, no cloud, no extra Python packages.
 
 ## Requirements
@@ -37,6 +40,25 @@ folder and restart.
 Further status, per-stream jitter, codec and content-sharing sensors exist but are disabled
 by default.
 
+## REST controls (optional)
+
+Enter the device's admin user name and password when adding the integration, or later via
+**Reconfigure** on the integration entry. Leave the password empty for SNMP monitoring only.
+
+| Entity | Type | REST endpoint |
+| --- | --- | --- |
+| Microphone mute | Switch | `/rest/audio/muted` |
+| Camera mute | Switch | `/rest/video/local/mute` |
+| Volume | Number (0-100) | `/rest/audio/volume` |
+| End call | Button | `DELETE /rest/conferences/<id>` |
+| Reboot | Button (disabled by default) | `/rest/system/reboot` |
+| USB device mode | Binary sensor | `/rest/system/mode/device` |
+| Call state, Call address | Sensors | `/rest/conferences` |
+
+The password is stored in Home Assistant's config entry. The device uses a self-signed
+certificate, so TLS verification is disabled for these requests. If the login is rejected the
+integration stops trying until it is reconfigured, to avoid locking the account.
+
 ## Notes and limitations
 
 - The device refreshes its SNMP data roughly every 15 seconds; the integration polls every 30.
@@ -44,3 +66,6 @@ by default.
 - Only the first active call is reported.
 - The MIB declares no units; the units above were inferred from observed values.
 - SNMP v3 is not supported.
+- The device exposes no room occupancy, people count or sleep state over SNMP or REST.
+- The REST features were written from the Poly VideoOS REST API Reference Guide and have not
+  yet been tested against real hardware.
