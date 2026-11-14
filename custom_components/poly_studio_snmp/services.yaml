@@ -1,0 +1,93 @@
+dial:
+  name: Dial
+  description: Place a call from the video bar. Requires the admin login to be configured.
+  fields:
+    device_id: &device
+      name: Device
+      description: The video bar. Leave empty to use every configured bar.
+      selector:
+        device:
+          integration: poly_studio_snmp
+    address:
+      name: Address
+      description: SIP URI, H.323 address, IP address or number to dial.
+      required: true
+      example: "room42@example.com"
+      selector:
+        text:
+    dial_type:
+      name: Call type
+      description: How to place the call.
+      default: AUTO
+      selector:
+        select:
+          options: ["AUTO", "VIDEO", "VOICE", "SIP", "H323", "VOICE_SIP", "VOICE_H323"]
+    rate:
+      name: Call rate
+      description: Call bitrate in kbit/s. Leave empty for the device default.
+      selector:
+        number:
+          min: 64
+          max: 6144
+          mode: box
+          unit_of_measurement: kbit/s
+    password:
+      name: Meeting password
+      description: Conference password, if the far end needs one.
+      selector:
+        text:
+          type: password
+
+send_dtmf:
+  name: Send DTMF
+  description: Send touch tones during a call.
+  fields:
+    device_id: *device
+    digits:
+      name: Digits
+      description: "Digits 0-9, * and #. A comma pauses for one second."
+      required: true
+      example: "1234#"
+      selector:
+        text:
+
+join_meeting:
+  name: Join meeting
+  description: Join a meeting from the bar's calendar.
+  fields:
+    device_id: *device
+    meeting_id:
+      name: Meeting ID
+      description: The calendar meeting ID (the event UID). Leave empty to join the current or next meeting.
+      selector:
+        text:
+
+recall_preset:
+  name: Recall camera preset
+  description: Move the camera to a stored preset.
+  fields:
+    device_id: *device
+    preset:
+      name: Preset
+      description: Preset number.
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 99
+          mode: box
+
+store_preset:
+  name: Store camera preset
+  description: Save the current camera position as a preset.
+  fields:
+    device_id: *device
+    preset:
+      name: Preset
+      description: Preset number to overwrite.
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 99
+          mode: box

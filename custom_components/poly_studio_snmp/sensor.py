@@ -172,6 +172,11 @@ REST_DESCRIPTIONS: tuple[PolySensorDescription, ...] = (
         value_fn=lambda d: _rest_connection(d).get("address"),
     ),
     PolySensorDescription(
+        key="calendar_status", name="Calendar service", icon="mdi:calendar-sync",
+        entity_category=DIAGNOSTIC,
+        value_fn=lambda d: (d.rest or {}).get("calendar_status"),
+    ),
+    PolySensorDescription(
         key="call_protocol", name="Call protocol", entity_registry_enabled_default=False,
         value_fn=lambda d: _rest_connection(d).get("callType"),
     ),

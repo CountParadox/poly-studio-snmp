@@ -1,4 +1,4 @@
-"""Switches (REST API): microphone mute and camera (local video) mute."""
+"""Switches (REST API): microphone mute, camera (local video) mute, digital signage."""
 from __future__ import annotations
 
 from typing import Any
@@ -17,7 +17,9 @@ async def async_setup_entry(
 ) -> None:
     coordinator = entry.runtime_data
     if coordinator.rest is not None:
-        async_add_entities([MicMuteSwitch(coordinator), VideoMuteSwitch(coordinator)])
+        async_add_entities(
+            [MicMuteSwitch(coordinator), VideoMuteSwitch(coordinator), SignageSwitch(coordinator)]
+        )
 
 
 class _MuteSwitch(PolyRestEntity, SwitchEntity):
@@ -66,3 +68,20 @@ class VideoMuteSwitch(_MuteSwitch):
 
     async def _set(self, muted: bool) -> None:
         await self.coordinator.rest.set_video_mute(muted)
+
+
+class SignageSwitch(_MuteSwitch):
+    """Starts or stops the Digital Signage application."""
+
+    _attr_name = "Digital signage"
+    _attr_icon = "mdi:television-play"
+
+    def __init__(self, coordinator: PolyCoordinator) -> None:
+        super().__init__(coordinator, "signage")
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.rest_data.get("signage")
+
+    async def _set(self, muted: bool) -> None:
+        await self.coordinator.rest.set_signage(muted)

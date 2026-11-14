@@ -4,7 +4,8 @@ Monitors a Poly Studio video bar (developed against a Studio X70 on software 4.2
 SNMP v2c, using the read-only `POLYCOM-ENDPOINT-MIB` (`1.3.6.1.4.1.13885.101`).
 
 Optionally, if you give it the device's admin login, it also uses the Poly VideoOS REST API
-for controls: microphone mute, camera mute, volume, end call and reboot.
+for controls: mute, volume, dial, answer and end call, DTMF, camera presets, calendar,
+digital signage, camera snapshots and reboot.
 
 Local polling, no cloud, no extra Python packages.
 
@@ -51,9 +52,41 @@ Enter the device's admin user name and password when adding the integration, or 
 | Camera mute | Switch | `/rest/video/local/mute` |
 | Volume | Number (0-100) | `/rest/audio/volume` |
 | End call | Button | `DELETE /rest/conferences/<id>` |
+| Answer call | Button | `POST /rest/conferences/<id>/connections/<id>` (see note) |
+| Join meeting | Button | `POST /rest/calendar/meetings/<id>` (current or next meeting) |
 | Reboot | Button (disabled by default) | `/rest/system/reboot` |
-| USB device mode | Binary sensor | `/rest/system/mode/device` |
-| Call state, Call address | Sensors | `/rest/conferences` |
+| Digital signage | Switch | `/rest/system/mode/signage` |
+| Camera preset | Select | `/rest/cameras/near/presets/<index>` |
+| Calendar | Calendar | `/rest/calendar/meetings` |
+| Camera snapshot | Camera (still image) | `/rest/cameras/snapshot/near_image_1.jpg` |
+| Incoming call, USB device mode | Binary sensors | `/rest/conferences`, `/rest/system/mode/device` |
+| Call state, Call address, Calendar service | Sensors | `/rest/conferences`, `/rest/calendar` |
+
+Far-end and content snapshot cameras also exist, disabled by default.
+
+### Actions
+
+| Action | Fields |
+| --- | --- |
+| `poly_studio_snmp.dial` | `address`, optional `dial_type`, `rate`, `password` |
+| `poly_studio_snmp.send_dtmf` | `digits` (0-9, `*`, `#`; a comma pauses one second) |
+| `poly_studio_snmp.join_meeting` | optional `meeting_id` (defaults to the current or next meeting) |
+| `poly_studio_snmp.recall_preset` | `preset` |
+| `poly_studio_snmp.store_preset` | `preset` |
+
+Every action takes an optional `device_id`; without it the action runs on every configured bar.
+
+Example:
+
+```yaml
+action: poly_studio_snmp.dial
+data:
+  address: room42@example.com
+```
+
+**Answer call:** the reference guide exposes which connections are answerable but does not
+document the answer request itself. The integration sends `{"action": "answer"}` to the
+connection, which is unconfirmed; if it fails, enable auto-answer on the device instead.
 
 The password is stored in Home Assistant's config entry. The device uses a self-signed
 certificate, so TLS verification is disabled for these requests. If the login is rejected the
@@ -67,5 +100,7 @@ integration stops trying until it is reconfigured, to avoid locking the account.
 - The MIB declares no units; the units above were inferred from observed values.
 - SNMP v3 is not supported.
 - The device exposes no room occupancy, people count or sleep state over SNMP or REST.
-- The REST features were written from the Poly VideoOS REST API Reference Guide and have not
-  yet been tested against real hardware.
+- The REST features were written from the Poly VideoOS REST API Reference Guide. Mute, volume,
+  end call and reboot are confirmed on a Studio X70; dial, answer, DTMF, presets, calendar,
+  signage and snapshots have not yet been tested against real hardware.
+- The camera snapshot is a still image stored by the device, not a live stream.

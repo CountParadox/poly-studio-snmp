@@ -35,7 +35,22 @@ def _device_mode(data: PolyData) -> bool | None:
     return (data.rest or {}).get("device_mode")
 
 
+def _incoming_call(data: PolyData) -> bool | None:
+    # REST /rest/conferences: any connection the device says can be answered
+    conferences = (data.rest or {}).get("conferences")
+    if conferences is None:
+        return None
+    return any(
+        isinstance(conn, dict) and conn.get("answerable")
+        for conf in conferences if isinstance(conf, dict)
+        for conn in conf.get("connections") or []
+    )
+
+
 REST_DESCRIPTIONS = (
+    PolyBinaryDescription(
+        key="incoming_call", name="Incoming call", icon="mdi:phone-ring", value_fn=_incoming_call
+    ),
     PolyBinaryDescription(
         key="device_mode", name="USB device mode", icon="mdi:usb", value_fn=_device_mode
     ),
